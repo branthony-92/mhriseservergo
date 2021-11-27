@@ -1,37 +1,18 @@
 package server
 
-import (
-	"go.mongodb.org/mongo-driver/bson"
-)
-
-type BSONEncoder interface {
-	Encode() *bson.D
-}
-
-type BSONDecoder interface {
-	Decode(b *bson.D)
-}
-
 type ErrorCode = int
 
 const (
-	EGeneric  ErrorCode = -1
-	EBadParse ErrorCode = iota
+	EOK ErrorCode = iota
+
+	EBadParse
 	EBadSerialization
 	EBadOptomization
+	EGeneric
 )
 
 type ResponseBody struct {
-	Body         BSONEncoder
-	Code         ErrorCode
-	ErrorMessage string
-}
-
-func (resp *ResponseBody) Encode() *bson.D {
-	doc := bson.D{
-		{"error_code", resp.Code},
-		{"error_message", resp.ErrorMessage},
-		{"message_body", resp.Body.Encode()},
-	}
-	return &doc
+	Body         interface{} `json:"message_body" bson:"message_body,inline,omitempty"`
+	Code         ErrorCode   `json:"error_code" bson:"error_code"`
+	ErrorMessage string      `json:"error_message" bson:"error_message`
 }

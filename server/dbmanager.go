@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -10,18 +11,20 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var URL string = ""
+
 func QueryAllSkills() []Skill {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(URL))
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			log.Fatal(err)
 		}
 	}()
-	skillList := make([]Skill, 10)
+	skillList := []Skill{}
 
-	collection := client.Database("mhrisedb").Collection("skills")
+	collection := client.Database("EquipmentInfo").Collection("skills")
 	cursor, err := collection.Find(ctx, bson.D{})
 	if err != nil {
 		log.Fatal(err)
@@ -29,48 +32,55 @@ func QueryAllSkills() []Skill {
 	defer cursor.Close(ctx)
 
 	for cursor.Next(ctx) {
-		var result bson.M
-		err := cursor.Decode(&result)
+		// Try to unmarshall directly into the skill struct
+		var s Skill
+		err := cursor.Decode(&s)
 		if err != nil {
 			log.Fatal(err)
+			continue
 		}
-
-		// TODO: figure out how to decode the bson in go
-		// parse result into the list
+		fmt.Printf("Unmarshalled struct \n%+v\n", s)
+		skillList = append(skillList, s)
 	}
-
-	// db query logic...
-
 	return skillList
 }
 
-func QueryAllArmour() []ArmourSet {
-
+func QueryAllArmour() []*ArmourSet {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(URL))
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	armourList := make([]ArmourSet, 10)
-	collection := client.Database("mhrisedb").Collection("armour")
+	armourList := []*ArmourSet{}
+	collection := client.Database("EquipmentInfo").Collection("armour")
 	cursor, err := collection.Find(ctx, bson.D{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer cursor.Close(ctx)
 
+	lastSet := "None"
+	var currentSet *ArmourSet
 	for cursor.Next(ctx) {
-		var result bson.M
-		err := cursor.Decode(&result)
+		// Try to unmarshall directly into the skill struct
+		var a ArmourPiece
+		err := cursor.Decode(&a)
 		if err != nil {
 			log.Fatal(err)
+			continue
 		}
-		// TODO: figure out how to decode the bson in go
-		// parse result into the list
+
+		// when the set name changes we need to start a new set
+		if a.SetName != lastSet {
+			currentSet = NewArmourSet()
+			currentSet.SetName = a.SetName
+			armourList = append(armourList, currentSet)
+		}
+		currentSet.Pieces = append(currentSet.Pieces, a)
 	}
 
 	// db query logic...

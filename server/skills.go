@@ -1,27 +1,13 @@
 package server
 
-import "go.mongodb.org/mongo-driver/bson"
-
 type Skill struct {
-	SkillName        string
-	SkillLevel       int
-	SkillLevelMax    int
-	SkillDescription string
-	SkillLevels      []string
+	SkillName        string   `json:"skill_name" bson:"skill_name"`
+	SkillLevelMax    int      `json:"skill_level_max" bson:"skill_level_max"`
+	SkillDescription string   `json:"skill_desc" bson:"skill_desc"`
+	SkillLevels      []string `json:"skill_levels" bson:"skill_levels"`
 }
 
 func NewSkill() *Skill {
 	s := Skill{}
 	return &s
-}
-
-func (s *Skill) Encode() *bson.D {
-	doc := bson.D{
-		{"skill_name", s.SkillName},
-		{"skill_level", s.SkillLevel},
-		{"skill_level_max", s.SkillLevelMax},
-		{"skill_desc", s.SkillDescription},
-		{"skill_levels", s.SkillLevels},
-	}
-	return &doc
 }
