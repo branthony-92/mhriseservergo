@@ -57,7 +57,11 @@ func QueryAllArmour() []*ArmourSet {
 
 	armourList := []*ArmourSet{}
 	collection := client.Database("EquipmentInfo").Collection("armour")
-	cursor, err := collection.Find(ctx, bson.D{})
+
+	filter := bson.D{}
+	opts := options.Find().SetSort(bson.D{{"rating", 1}})
+
+	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
 		log.Fatal(err)
 	}
