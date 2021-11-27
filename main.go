@@ -12,8 +12,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func LoadURL() {
-	err := godotenv.Load("serverconfig.env")
+func LoadURL(fname string) {
+	err := godotenv.Load(fname)
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -22,20 +22,22 @@ func LoadURL() {
 
 func main() {
 	numArgs := len(os.Args)
-	if numArgs < 3 {
+	if numArgs < 4 {
 		return
 	}
 
 	hostname := os.Args[1]
 	portstring := os.Args[2]
+	envFileName := os.Args[3]
 
 	url := fmt.Sprintf("%v:%v", hostname, portstring)
 
 	http.HandleFunc("/api/v1/skills", handleSkills)
-	http.HandleFunc("/api/vi/armoursets", handleArmour)
+	http.HandleFunc("/api/v1/armoursets", handleArmour)
+	http.HandleFunc("/api/v1/applyfilter", handleApplyFilter)
 
 	fmt.Printf("Server Listening On %v\n", url)
-	LoadURL()
+	LoadURL(envFileName)
 	if err := http.ListenAndServe(url, nil); err != nil {
 		panic(err)
 	}
@@ -75,4 +77,28 @@ func handleArmour(w http.ResponseWriter, req *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+func handleApplyFilter(w http.ResponseWriter, req *http.Request) {
+	q := req.URL.Query()
+	filter, ok := q["filter"]
+	if !ok {
+
+	}
+
+	armour := server.QueryFilter(filter[0])
+	resp := server.ResponseBody{
+		Code:         server.EOK,
+		ErrorMessage: "",
+		Body:         armour,
+	}
+
+	data, err := json.MarshalIndent(resp, "", "  ")
+	if err != nil {
+
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+
+	fmt.Printf("%v", filter[0])
 }

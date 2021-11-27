@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -86,8 +87,46 @@ func QueryAllArmour() []*ArmourSet {
 		}
 		currentSet.Pieces = append(currentSet.Pieces, a)
 	}
-
-	// db query logic...
-
 	return armourList
+}
+
+func QueryFilter(q string) []ArmourPiece {
+	pieces := []ArmourPiece{}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(URL))
+	defer func() {
+		if err = client.Disconnect(ctx); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	collection := client.Database("EquipmentInfo").Collection("armour")
+
+	var filter bson.M
+
+	if err := json.Unmarshal([]byte(q), &filter); err != nil {
+		log.Fatal(err)
+	}
+
+	opts := options.Find().SetSort(bson.D{{"rating", 1}})
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		// Try to unmarshall directly into the skill struct
+		var a ArmourPiece
+		err := cursor.Decode(&a)
+		if err != nil {
+			log.Fatal(err)
+			continue
+		}
+		pieces = append(pieces, a)
+	}
+	return pieces
 }
