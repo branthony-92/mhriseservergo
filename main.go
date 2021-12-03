@@ -36,7 +36,6 @@ func sendReply(w http.ResponseWriter, r server.ResponseBody) {
 		sendErrorReply(w, err, 500)
 		return
 	}
-	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
@@ -175,8 +174,7 @@ func handleOptimize(w http.ResponseWriter, req *http.Request) {
 		}
 
 		customSet, err := server.Optimize(data)
-		summary := *server.Summarize(customSet)
-		customSet.Pieces = append(customSet.Pieces, summary)
+		fmt.Println(server.Summarize(*customSet))
 
 		if err != nil {
 			resp.ErrorMessage = err.Error()

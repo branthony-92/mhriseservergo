@@ -18,12 +18,23 @@ type WeightedParam struct {
 }
 
 type OptimizationFilters struct {
-	Skills          []WeightedParam `json:"skills"`
-	Resistences     []WeightedParam `json:"resistences"`
-	MinRarity       int             `json:"min_rarity"`
-	MaxRarity       int             `json:"max_rarity"`
+	Skills      []WeightedParam `json:"skills"`
+	Resistences []WeightedParam `json:"resistences"`
+	MinRarity   int             `json:"min_rarity"`
+	MaxRarity   int             `json:"max_rarity"`
+	ExcludeSets []string        `json:"exclude_sets"`
+
 	RemainingPoints map[string]int
 	MaxPoints       map[string]int
+}
+
+func isInList(item string, list []string) bool {
+	for _, i := range list {
+		if i == item {
+			return true
+		}
+	}
+	return false
 }
 
 var URL string = ""
@@ -219,23 +230,23 @@ func Optimize(filters []byte) (*ArmourSet, error) {
 	}
 
 	// using the filters, and the next list calculate a weight value representing each armour piece to select the next best part
-	bestHelm, err := calculateBest(cachedHelms, &f, skills)
+	bestHelm, err := calculateBest(cachedHelms, &f)
 	if err != nil {
 		return nil, err
 	}
-	bestMail, err := calculateBest(cachedMails, &f, skills)
+	bestMail, err := calculateBest(cachedMails, &f)
 	if err != nil {
 		return nil, err
 	}
-	bestCoil, err := calculateBest(cachedCoils, &f, skills)
+	bestCoil, err := calculateBest(cachedCoils, &f)
 	if err != nil {
 		return nil, err
 	}
-	bestVambraces, err := calculateBest(cachedVambraces, &f, skills)
+	bestVambraces, err := calculateBest(cachedVambraces, &f)
 	if err != nil {
 		return nil, err
 	}
-	bestGreaves, err := calculateBest(cachedGreaves, &f, skills)
+	bestGreaves, err := calculateBest(cachedGreaves, &f)
 	if err != nil {
 		return nil, err
 	}
@@ -250,12 +261,12 @@ func Optimize(filters []byte) (*ArmourSet, error) {
 	return &set, nil
 }
 
-func calculateBest(pieces []ArmourPiece, filters *OptimizationFilters, skills []Skill) (*ArmourPiece, error) {
+func calculateBest(pieces []ArmourPiece, filters *OptimizationFilters) (*ArmourPiece, error) {
 	if len(pieces) == 0 {
 		return nil, fmt.Errorf("No Armour in setType")
 	}
 
-	var p ArmourPiece
+	p := ArmourPiece{}
 	bestsScore := 0.0
 	for _, piece := range pieces {
 
@@ -265,6 +276,10 @@ func calculateBest(pieces []ArmourPiece, filters *OptimizationFilters, skills []
 		if piece.Rarity > filters.MaxRarity {
 			continue
 		}
+		if isInList(piece.SetName, filters.ExcludeSets) {
+			continue
+		}
+
 		currentScore := 0.0
 		skillScore := 0.0
 
@@ -273,7 +288,7 @@ func calculateBest(pieces []ArmourPiece, filters *OptimizationFilters, skills []
 			if filters.RemainingPoints[skill.Name] <= 0 {
 				skillScore = 1.0
 			} else {
-				skillScore = calculateSkilleWeight(&piece, skill.Name, filters)
+				skillScore = calculateSkilleWeight(piece, skill.Name, filters)
 			}
 			currentScore += skillScore * skill.Weight
 		}
@@ -297,7 +312,7 @@ func calculateBest(pieces []ArmourPiece, filters *OptimizationFilters, skills []
 	return &p, nil
 }
 
-func calculateSkilleWeight(a *ArmourPiece, skill string, filters *OptimizationFilters) float64 {
+func calculateSkilleWeight(a ArmourPiece, skill string, filters *OptimizationFilters) float64 {
 	w := 0.0
 	skillWeight := float64(filters.RemainingPoints[skill]) / float64(filters.MaxPoints[skill])
 	for _, s := range a.Skills {
