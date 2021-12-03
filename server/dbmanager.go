@@ -20,13 +20,26 @@ type WeightedParam struct {
 type OptimizationFilters struct {
 	Skills          []WeightedParam `json:"skills"`
 	Resistences     []WeightedParam `json:"resistences"`
+	MinRarity       int             `json:"min_rarity"`
+	MaxRarity       int             `json:"max_rarity"`
 	RemainingPoints map[string]int
 	MaxPoints       map[string]int
 }
 
 var URL string = ""
 
+var cachedSkills []Skill = make([]Skill, 0)
+var cachedHelms []ArmourPiece = make([]ArmourPiece, 0)
+var cachedMails []ArmourPiece = make([]ArmourPiece, 0)
+var cachedCoils []ArmourPiece = make([]ArmourPiece, 0)
+var cachedVambraces []ArmourPiece = make([]ArmourPiece, 0)
+var cachedGreaves []ArmourPiece = make([]ArmourPiece, 0)
+
 func QueryAllSkills() ([]Skill, error) {
+	if len(cachedSkills) != 0 {
+		return cachedSkills, nil
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(URL))
@@ -55,7 +68,8 @@ func QueryAllSkills() ([]Skill, error) {
 		fmt.Printf("Unmarshalled struct \n%+v\n", s)
 		skillList = append(skillList, s)
 	}
-	return skillList, nil
+	cachedSkills = skillList
+	return cachedSkills, nil
 }
 
 func QueryAllArmour() ([]*ArmourSet, error) {
@@ -152,25 +166,35 @@ func Optimize(filters []byte) (*ArmourSet, error) {
 	}
 
 	// get a list of each individual piece type
-	helms, err := QueryFilter([]byte(`{"piece_type":"helm"}`))
-	if err != nil {
-		return nil, err
+	if len(cachedHelms) == 0 {
+		cachedHelms, err = QueryFilter([]byte(`{"piece_type":"helm"}`))
+		if err != nil {
+			return nil, err
+		}
 	}
-	mails, err := QueryFilter([]byte(`{"piece_type":"mail"}`))
-	if err != nil {
-		return nil, err
+	if len(cachedMails) == 0 {
+		cachedMails, err = QueryFilter([]byte(`{"piece_type":"mail"}`))
+		if err != nil {
+			return nil, err
+		}
 	}
-	coils, err := QueryFilter([]byte(`{"piece_type":"coil"}`))
-	if err != nil {
-		return nil, err
+	if len(cachedCoils) == 0 {
+		cachedCoils, err = QueryFilter([]byte(`{"piece_type":"coil"}`))
+		if err != nil {
+			return nil, err
+		}
 	}
-	vambraces, err := QueryFilter([]byte(`{"piece_type":"vambraces"}`))
-	if err != nil {
-		return nil, err
+	if len(cachedVambraces) == 0 {
+		cachedVambraces, err = QueryFilter([]byte(`{"piece_type":"vambraces"}`))
+		if err != nil {
+			return nil, err
+		}
 	}
-	greaves, err := QueryFilter([]byte(`{"piece_type":"greaves"}`))
-	if err != nil {
-		return nil, err
+	if len(cachedGreaves) == 0 {
+		cachedGreaves, err = QueryFilter([]byte(`{"piece_type":"greaves"}`))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	f := OptimizationFilters{}
@@ -195,23 +219,23 @@ func Optimize(filters []byte) (*ArmourSet, error) {
 	}
 
 	// using the filters, and the next list calculate a weight value representing each armour piece to select the next best part
-	bestHelm, err := calculateBest(helms, &f, skills)
+	bestHelm, err := calculateBest(cachedHelms, &f, skills)
 	if err != nil {
 		return nil, err
 	}
-	bestMail, err := calculateBest(mails, &f, skills)
+	bestMail, err := calculateBest(cachedMails, &f, skills)
 	if err != nil {
 		return nil, err
 	}
-	bestCoil, err := calculateBest(coils, &f, skills)
+	bestCoil, err := calculateBest(cachedCoils, &f, skills)
 	if err != nil {
 		return nil, err
 	}
-	bestVambraces, err := calculateBest(vambraces, &f, skills)
+	bestVambraces, err := calculateBest(cachedVambraces, &f, skills)
 	if err != nil {
 		return nil, err
 	}
-	bestGreaves, err := calculateBest(greaves, &f, skills)
+	bestGreaves, err := calculateBest(cachedGreaves, &f, skills)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +247,6 @@ func Optimize(filters []byte) (*ArmourSet, error) {
 	set.Pieces = append(set.Pieces, *bestGreaves)
 
 	// return the custom set
-
 	return &set, nil
 }
 
@@ -235,6 +258,13 @@ func calculateBest(pieces []ArmourPiece, filters *OptimizationFilters, skills []
 	var p ArmourPiece
 	bestsScore := 0.0
 	for _, piece := range pieces {
+
+		if piece.Rarity < filters.MinRarity {
+			continue
+		}
+		if piece.Rarity > filters.MaxRarity {
+			continue
+		}
 		currentScore := 0.0
 		skillScore := 0.0
 

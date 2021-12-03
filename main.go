@@ -21,6 +21,26 @@ func LoadURL(fname string) {
 	server.URL = os.Getenv("MONGODB_URI")
 }
 
+func sendErrorReply(w http.ResponseWriter, err error, statusCode int) {
+	msg := "Unknown Error"
+	if err != nil {
+		msg = err.Error()
+	}
+	w.WriteHeader(statusCode)
+	w.Header().Set("Content-Type", "html/text")
+	w.Write([]byte(msg))
+}
+func sendReply(w http.ResponseWriter, r server.ResponseBody) {
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		sendErrorReply(w, err, 500)
+		return
+	}
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
 func main() {
 	numArgs := len(os.Args)
 	if numArgs < 4 {
@@ -41,6 +61,8 @@ func main() {
 	fmt.Printf("Server Listening On %v\n", url)
 	LoadURL(envFileName)
 
+	server.Optimize([]byte(`{}`))
+
 	if err := http.ListenAndServe(url, nil); err != nil {
 		panic(err)
 	}
@@ -52,23 +74,26 @@ func handleSkills(w http.ResponseWriter, req *http.Request) {
 		ErrorMessage: "",
 		Body:         nil,
 	}
-	sendReply := func(r server.ResponseBody) {
-		data, err := json.MarshalIndent(resp, "", "  ")
-		if err != nil {
-			resp.Body = nil
-			resp.ErrorMessage = err.Error()
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	}
-	skills, err := server.QueryAllSkills()
 
-	if err != nil {
-		resp.ErrorMessage = err.Error()
-	} else {
-		resp.Body = skills
+	switch req.Method {
+	case http.MethodPut:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodPost:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodGet:
+		skills, err := server.QueryAllSkills()
+		if err != nil {
+			resp.ErrorMessage = err.Error()
+		} else {
+			resp.Body = skills
+		}
+		sendReply(w, resp)
+	case http.MethodDelete:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	default:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
 	}
-	sendReply(resp)
+
 }
 
 func handleArmour(w http.ResponseWriter, req *http.Request) {
@@ -77,26 +102,27 @@ func handleArmour(w http.ResponseWriter, req *http.Request) {
 		ErrorMessage: "",
 		Body:         nil,
 	}
-	sendReply := func(r server.ResponseBody) {
-		data, err := json.MarshalIndent(resp, "", "  ")
-		if err != nil {
-			resp.Body = nil
-			resp.ErrorMessage = err.Error()
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	}
 
 	fmt.Println("Armour Query Request")
-	armour, err := server.QueryAllArmour()
 
-	if err != nil {
-		resp.ErrorMessage = err.Error()
-		return
-	} else {
-		resp.Body = armour
+	switch req.Method {
+	case http.MethodPut:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodPost:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodGet:
+		armour, err := server.QueryAllArmour()
+		if err != nil {
+			resp.ErrorMessage = err.Error()
+		} else {
+			resp.Body = armour
+		}
+		sendReply(w, resp)
+	case http.MethodDelete:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	default:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
 	}
-	sendReply(resp)
 }
 
 func handleApplyFilter(w http.ResponseWriter, req *http.Request) {
@@ -105,34 +131,32 @@ func handleApplyFilter(w http.ResponseWriter, req *http.Request) {
 		ErrorMessage: "",
 		Body:         nil,
 	}
-	sendReply := func(r server.ResponseBody) {
-		data, err := json.MarshalIndent(resp, "", "  ")
+
+	switch req.Method {
+	case http.MethodPut:
+		data, err := io.ReadAll(req.Body)
 		if err != nil {
-			resp.Body = nil
-			resp.ErrorMessage = err.Error()
+			resp.ErrorMessage = "No Body"
+			sendReply(w, resp)
+			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
+		armour, err := server.QueryFilter(data)
+		if err != nil {
+			resp.ErrorMessage = err.Error()
+			return
+		} else {
+			resp.Body = armour
+		}
+		sendReply(w, resp)
+	case http.MethodPost:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodGet:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodDelete:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	default:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
 	}
-
-	q := req.URL.Query()
-
-	filter, ok := q["filter"]
-	if !ok {
-		resp.ErrorMessage = "No Filters In Query"
-		sendReply(resp)
-		return
-	}
-
-	armour, err := server.QueryFilter([]byte(filter[0]))
-
-	if err != nil {
-		resp.ErrorMessage = err.Error()
-		return
-	} else {
-		resp.Body = armour
-	}
-	sendReply(resp)
 }
 
 func handleOptimize(w http.ResponseWriter, req *http.Request) {
@@ -141,32 +165,33 @@ func handleOptimize(w http.ResponseWriter, req *http.Request) {
 		ErrorMessage: "",
 		Body:         nil,
 	}
-	sendReply := func(r server.ResponseBody) {
-		data, err := json.MarshalIndent(resp, "", "  ")
+	switch req.Method {
+	case http.MethodPut:
+		data, err := io.ReadAll(req.Body)
 		if err != nil {
-			resp.Body = nil
-			resp.ErrorMessage = err.Error()
+			resp.ErrorMessage = "No Body"
+			sendReply(w, resp)
+			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	}
 
-	data, err := io.ReadAll(req.Body)
-	if err != nil {
-		resp.ErrorMessage = "No Body"
-		sendReply(resp)
-		return
-	}
+		customSet, err := server.Optimize(data)
+		summary := *server.Summarize(customSet)
+		customSet.Pieces = append(customSet.Pieces, summary)
 
-	customSet, err := server.Optimize(data)
-	summary := *server.Summarize(customSet)
-	customSet.Pieces = append(customSet.Pieces, summary)
-
-	if err != nil {
-		resp.ErrorMessage = err.Error()
-		return
-	} else {
-		resp.Body = customSet
+		if err != nil {
+			resp.ErrorMessage = err.Error()
+			return
+		} else {
+			resp.Body = customSet
+		}
+		sendReply(w, resp)
+	case http.MethodPost:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodGet:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	case http.MethodDelete:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
+	default:
+		sendErrorReply(w, fmt.Errorf("Method %v not supported for this endpoint", req.Method), 400)
 	}
-	sendReply(resp)
 }
