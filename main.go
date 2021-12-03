@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -35,70 +36,137 @@ func main() {
 	http.HandleFunc("/api/v1/skills", handleSkills)
 	http.HandleFunc("/api/v1/armoursets", handleArmour)
 	http.HandleFunc("/api/v1/applyfilter", handleApplyFilter)
+	http.HandleFunc("/api/v1/optimize", handleOptimize)
 
 	fmt.Printf("Server Listening On %v\n", url)
 	LoadURL(envFileName)
+
 	if err := http.ListenAndServe(url, nil); err != nil {
 		panic(err)
 	}
 }
 
 func handleSkills(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("Skill Query Request")
-	skills := server.QueryAllSkills()
-
 	resp := server.ResponseBody{
-		Code:         server.EOK,
+		Code:         0,
 		ErrorMessage: "",
-		Body:         skills,
+		Body:         nil,
 	}
+	sendReply := func(r server.ResponseBody) {
+		data, err := json.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			resp.Body = nil
+			resp.ErrorMessage = err.Error()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	}
+	skills, err := server.QueryAllSkills()
 
-	data, err := json.MarshalIndent(resp, "", "  ")
 	if err != nil {
-
+		resp.ErrorMessage = err.Error()
+	} else {
+		resp.Body = skills
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	sendReply(resp)
 }
 
 func handleArmour(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("Armour Query Request")
-	armour := server.QueryAllArmour()
-
 	resp := server.ResponseBody{
-		Code:         server.EOK,
+		Code:         0,
 		ErrorMessage: "",
-		Body:         armour,
+		Body:         nil,
+	}
+	sendReply := func(r server.ResponseBody) {
+		data, err := json.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			resp.Body = nil
+			resp.ErrorMessage = err.Error()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
 	}
 
-	data, err := json.MarshalIndent(resp, "", "  ")
+	fmt.Println("Armour Query Request")
+	armour, err := server.QueryAllArmour()
+
 	if err != nil {
-
+		resp.ErrorMessage = err.Error()
+		return
+	} else {
+		resp.Body = armour
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	sendReply(resp)
 }
 
 func handleApplyFilter(w http.ResponseWriter, req *http.Request) {
+	resp := server.ResponseBody{
+		Code:         0,
+		ErrorMessage: "",
+		Body:         nil,
+	}
+	sendReply := func(r server.ResponseBody) {
+		data, err := json.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			resp.Body = nil
+			resp.ErrorMessage = err.Error()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	}
+
 	q := req.URL.Query()
+
 	filter, ok := q["filter"]
 	if !ok {
-
+		resp.ErrorMessage = "No Filters In Query"
+		sendReply(resp)
+		return
 	}
 
-	armour := server.QueryFilter(filter[0])
-	resp := server.ResponseBody{
-		Code:         server.EOK,
-		ErrorMessage: "",
-		Body:         armour,
-	}
+	armour, err := server.QueryFilter([]byte(filter[0]))
 
-	data, err := json.MarshalIndent(resp, "", "  ")
 	if err != nil {
-
+		resp.ErrorMessage = err.Error()
+		return
+	} else {
+		resp.Body = armour
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	sendReply(resp)
+}
 
-	fmt.Printf("%v", filter[0])
+func handleOptimize(w http.ResponseWriter, req *http.Request) {
+	resp := server.ResponseBody{
+		Code:         0,
+		ErrorMessage: "",
+		Body:         nil,
+	}
+	sendReply := func(r server.ResponseBody) {
+		data, err := json.MarshalIndent(resp, "", "  ")
+		if err != nil {
+			resp.Body = nil
+			resp.ErrorMessage = err.Error()
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	}
+
+	data, err := io.ReadAll(req.Body)
+	if err != nil {
+		resp.ErrorMessage = "No Body"
+		sendReply(resp)
+		return
+	}
+
+	customSet, err := server.Optimize(data)
+	summary := *server.Summarize(customSet)
+	customSet.Pieces = append(customSet.Pieces, summary)
+
+	if err != nil {
+		resp.ErrorMessage = err.Error()
+		return
+	} else {
+		resp.Body = customSet
+	}
+	sendReply(resp)
 }

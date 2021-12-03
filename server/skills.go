@@ -11,3 +11,12 @@ func NewSkill() *Skill {
 	s := Skill{}
 	return &s
 }
+
+func FindSkill(skills []Skill, name string) *Skill {
+	for _, s := range skills {
+		if s.SkillName == name {
+			return &s
+		}
+	}
+	return nil
+}
