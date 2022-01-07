@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  backend:
+    image: mhriseapp/backend
+    container_name: mhriseapp-backend
+    restart: unless-stopped
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    ports:
+      - "4000:4000"
+    networks:
+      - app-network
+  nginx-proxy:
+    image: mhriseapp/frontend
+    container_name: mhriseapp-frontend
+    restart: unless-stopped
+    build:
+      context: ./app-front-end
+      dockerfile: ./Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
