@@ -37,6 +37,7 @@ func sendReply(w http.ResponseWriter, r server.ResponseBody) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(data)
 }
 
@@ -59,8 +60,6 @@ func main() {
 
 	fmt.Printf("Server Listening On %v\n", url)
 	LoadURL(envFileName)
-
-	server.Optimize([]byte(`{}`))
 
 	if err := http.ListenAndServe(url, nil); err != nil {
 		panic(err)

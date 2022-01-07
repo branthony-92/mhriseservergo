@@ -121,8 +121,21 @@ func QueryAllArmour() ([]*ArmourSet, error) {
 			currentSet = NewArmourSet()
 			currentSet.SetName = a.SetName
 			armourList = append(armourList, currentSet)
+			lastSet = a.SetName
 		}
-		currentSet.Pieces = append(currentSet.Pieces, a)
+		switch a.PieceType {
+		case "mail":
+			currentSet.Mail = &a
+		case "helm":
+			currentSet.Helm = &a
+		case "greaves":
+			currentSet.Greaves = &a
+		case "vambraces":
+			currentSet.Vambraces = &a
+		case "coil":
+			currentSet.Coil = &a
+		}
+
 	}
 	return armourList, nil
 }
@@ -251,11 +264,11 @@ func Optimize(filters []byte) (*ArmourSet, error) {
 		return nil, err
 	}
 
-	set.Pieces = append(set.Pieces, *bestHelm)
-	set.Pieces = append(set.Pieces, *bestMail)
-	set.Pieces = append(set.Pieces, *bestCoil)
-	set.Pieces = append(set.Pieces, *bestVambraces)
-	set.Pieces = append(set.Pieces, *bestGreaves)
+	set.Helm = bestHelm
+	set.Mail = bestMail
+	set.Coil = bestCoil
+	set.Vambraces = bestVambraces
+	set.Greaves = bestGreaves
 
 	// return the custom set
 	return &set, nil

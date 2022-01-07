@@ -19,6 +19,7 @@ type ArmourSkill struct {
 }
 
 type ArmourPiece struct {
+	ID         int           `json:"_id" bson:"_id"`
 	PieceName  string        `json:"piece_name" bson:"piece_name"`
 	SetName    string        `json:"set_name" bson:"set_name"`
 	PieceType  string        `json:"piece_type" bson:"piece_type"`
@@ -39,13 +40,25 @@ func NewArmourPiece() *ArmourPiece {
 }
 
 type ArmourSet struct {
-	Pieces  []ArmourPiece `json:"pieces"`
-	SetName string        `json:"set_name"`
-	Summary string        `json:"summary"`
+	Helm      *ArmourPiece `json:"helm"`
+	Mail      *ArmourPiece `json:"mail"`
+	Coil      *ArmourPiece `json:"coil"`
+	Vambraces *ArmourPiece `json:"vambraces"`
+	Greaves   *ArmourPiece `json:"greaves"`
+	SetName   string       `json:"set_name"`
+	Summary   string       `json:"summary"`
 }
 
 func NewArmourSet() *ArmourSet {
-	armour := ArmourSet{}
+	armour := ArmourSet{
+		Helm:      nil,
+		Mail:      nil,
+		Coil:      nil,
+		Vambraces: nil,
+		Greaves:   nil,
+		SetName:   "",
+		Summary:   "",
+	}
 	return &armour
 }
 
@@ -60,24 +73,26 @@ func Summarize(set ArmourSet) string {
 	DragonRes := 0
 
 	str += "Parts:\n"
-	for _, p := range set.Pieces {
-		str += fmt.Sprintf("\t%v (%v)\n", p.PieceName, p.PieceType)
-		Defense += p.Defense
-		ThunderRes += p.ThunderRes
-		FireRes += p.FireRes
-		WaterRes += p.WaterRes
-		IceRes += p.IceRes
-		DragonRes += p.DragonRes
+	/*
+		for _, p := range set.Pieces {
+			str += fmt.Sprintf("\t%v (%v)\n", p.PieceName, p.PieceType)
+			Defense += p.Defense
+			ThunderRes += p.ThunderRes
+			FireRes += p.FireRes
+			WaterRes += p.WaterRes
+			IceRes += p.IceRes
+			DragonRes += p.DragonRes
 
-		for _, inSkill := range p.Skills {
-			_, ok := skills[inSkill.Name]
-			if ok {
-				skills[inSkill.Name] += inSkill.Level
-			} else {
-				skills[inSkill.Name] = inSkill.Level
+			for _, inSkill := range p.Skills {
+				_, ok := skills[inSkill.Name]
+				if ok {
+					skills[inSkill.Name] += inSkill.Level
+					} else {
+						skills[inSkill.Name] = inSkill.Level
+					}
+				}
 			}
-		}
-	}
+	*/
 
 	str += "\nStats:\n"
 	str += fmt.Sprintf("\tDefence: %v\n", Defense)
