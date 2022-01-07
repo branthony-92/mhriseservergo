@@ -11,18 +11,18 @@ function ArmourPiece(props) {
         setShowStates(!showStates)
     }
 
-
     if (props.info != null) {
         return (
             <Card>
                 <div onClick={handleToggleStats}>
-                    <h3>{props.info.piece_name}</h3>   
+                <h3>{props.info.piece_name}</h3>   
                     { showStates && <ArmourStats info={props.info}/>}
+                    { showStates && <image src={props.img} alt={props.info.piece_name}/> }
                 </div>
             </Card>
         );
     } else {
-        return <h3>N/A</h3>  
+        return <div/>
     }
 
 }

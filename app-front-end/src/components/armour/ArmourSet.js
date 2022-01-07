@@ -4,6 +4,12 @@ import ArmourPiece from "./ArmourPiece";
 import ArmourSetSummary from "./ArmourSetSummary";
 import ArmourStats from "./ArmourStats";
 
+const helmImgURL = "https://fanonmonsterhunter.fandom.com/wiki/Armor_Icons?file=Helmet_Icon_White.png";
+const mailImgURL = "https://fanonmonsterhunter.fandom.com/wiki/Armor_Icons?file=Chest_Icon_White.png";
+const vambracesImgURL = "https://fanonmonsterhunter.fandom.com/wiki/Armor_Icons?file=Arm_Icon_White.png";
+const coilImgURL = "https://fanonmonsterhunter.fandom.com/wiki/Armor_Icons?file=Waist_Icon_White.png";
+const gravesImgURL = "https://fanonmonsterhunter.fandom.com/wiki/Armor_Icons?file=Leg_Icon_White.png";
+
 function ArmourSet(props) {
     const [ showStates, setShowStates ] = useState(false);
 
@@ -66,15 +72,15 @@ function ArmourSet(props) {
     }
 
     return (
-        <li> 
+        <li key={props.key}> 
             <Card>
                 <h2 onClick={handleToggleStats}>{props.setName}</h2>
                 {showStates && <ArmourSetSummary info={generateStateSummary(props)}/>}
-                {showStates && <ArmourPiece info={props.helm}/>}
-                {showStates && <ArmourPiece info={props.mail} />}
-                {showStates && <ArmourPiece info={props.vambraces} />}
-                {showStates && <ArmourPiece info={props.coil} />}
-                {showStates && <ArmourPiece info={props.greaves} />}
+                {showStates && <ArmourPiece img={helmImgURL} info={props.helm}/>}
+                {showStates && <ArmourPiece img={mailImgURL} info={props.mail} />}
+                {showStates && <ArmourPiece img={vambracesImgURL} info={props.vambraces} />}
+                {showStates && <ArmourPiece img={coilImgURL} info={props.coil} />}
+                {showStates && <ArmourPiece img={gravesImgURL} info={props.greaves} />}
             </Card>
         </li>
     );
