@@ -75,12 +75,12 @@ function ArmourSet(props) {
         <li key={props.key}> 
             <Card>
                 <h2 onClick={handleToggleStats}>{props.setName}</h2>
-                {showStates && <ArmourSetSummary info={generateStateSummary(props)}/>}
-                {showStates && <ArmourPiece img={helmImgURL} info={props.helm}/>}
-                {showStates && <ArmourPiece img={mailImgURL} info={props.mail} />}
-                {showStates && <ArmourPiece img={vambracesImgURL} info={props.vambraces} />}
-                {showStates && <ArmourPiece img={coilImgURL} info={props.coil} />}
-                {showStates && <ArmourPiece img={gravesImgURL} info={props.greaves} />}
+                {showStates && <ArmourSetSummary key={props.key} info={generateStateSummary(props)}/>}
+                {showStates && <ArmourPiece key={props.key} img={helmImgURL} info={props.helm}/>}
+                {showStates && <ArmourPiece key={props.key} img={mailImgURL} info={props.mail} />}
+                {showStates && <ArmourPiece key={props.key} img={vambracesImgURL} info={props.vambraces} />}
+                {showStates && <ArmourPiece key={props.key} img={coilImgURL} info={props.coil} />}
+                {showStates && <ArmourPiece key={props.key} img={gravesImgURL} info={props.greaves} />}
             </Card>
         </li>
     );
