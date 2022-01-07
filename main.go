@@ -3,22 +3,21 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 
 	"encoding/json"
 
 	server "github.com/branthony-92/mhriseservergo/server"
-	"github.com/joho/godotenv"
+	//"github.com/joho/godotenv"
 )
 
 func LoadURL(fname string) {
-	err := godotenv.Load(fname)
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	server.URL = os.Getenv("MONGODB_URI")
+	//err := godotenv.Load(fname)
+	//if err != nil {
+	//	log.Fatal("Error loading .env file")
+	//}
+	server.URL = "mongodb+srv://mhrise-user:dYiVISDF8teKybdA@mhrisedb.ckl1w.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 }
 
 func sendErrorReply(w http.ResponseWriter, err error, statusCode int) {
