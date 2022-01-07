@@ -47,7 +47,11 @@ func main() {
 	}
 
 	hostname := os.Args[1]
-	portstring := os.Args[2]
+
+	portstring := os.Getenv("PORT")
+	if len(portstring) == 0 {
+		portstring = os.Args[2]
+	}
 	envFileName := os.Args[3]
 
 	url := fmt.Sprintf("%v:%v", hostname, portstring)
