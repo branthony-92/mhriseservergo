@@ -94,6 +94,8 @@ func QueryAllArmour() ([]*ArmourSet, error) {
 	}()
 
 	armourList := []*ArmourSet{}
+	armourSetMap := make(map[string]*ArmourSet)
+
 	collection := client.Database("EquipmentInfo").Collection("armour")
 
 	filter := bson.D{}
@@ -105,8 +107,6 @@ func QueryAllArmour() ([]*ArmourSet, error) {
 	}
 	defer cursor.Close(ctx)
 
-	lastSet := "None"
-	var currentSet *ArmourSet
 	for cursor.Next(ctx) {
 		// Try to unmarshall directly into the skill struct
 		var a ArmourPiece
@@ -116,24 +116,25 @@ func QueryAllArmour() ([]*ArmourSet, error) {
 			continue
 		}
 
-		// when the set name changes we need to start a new set
-		if a.SetName != lastSet {
-			currentSet = NewArmourSet()
-			currentSet.SetName = a.SetName
-			armourList = append(armourList, currentSet)
-			lastSet = a.SetName
+		// If the current piece is from a set that has not been stored then create a new set object and add it to the list
+		_, ok := armourSetMap[a.SetName]
+		if !ok {
+			armourSetMap[a.SetName] = NewArmourSet()
+			armourSetMap[a.SetName].SetName = a.SetName
+			armourList = append(armourList, armourSetMap[a.SetName])
 		}
+
 		switch a.PieceType {
 		case "mail":
-			currentSet.Mail = &a
+			armourSetMap[a.SetName].Mail = &a
 		case "helm":
-			currentSet.Helm = &a
+			armourSetMap[a.SetName].Helm = &a
 		case "greaves":
-			currentSet.Greaves = &a
+			armourSetMap[a.SetName].Greaves = &a
 		case "vambraces":
-			currentSet.Vambraces = &a
+			armourSetMap[a.SetName].Vambraces = &a
 		case "coil":
-			currentSet.Coil = &a
+			armourSetMap[a.SetName].Coil = &a
 		}
 
 	}
